@@ -100,18 +100,12 @@ if uploaded_file:
 
         # Hinzufügen einer Linie (Trace) für jeden ausgewählten Standort in sortierter Reihenfolge
         for location in sorted_locations:
-            # Das Template formatiert NUR den Wert. Plotly fügt den Namen automatisch hinzu.
-            if is_percent:
-                hover_template = '%{y:.2f}%<extra></extra>'
-            else:
-                hover_template = '%{y:,.2f}<extra></extra>'
-
             fig.add_trace(go.Scatter(
                 x=filtered_data.index,
                 y=filtered_data[location],
                 name=location,
                 mode='lines+markers',
-                hovertemplate=hover_template,
+                # hovertemplate argument is removed to restore default behavior
                 line=dict(color=color_map[location]),
                 marker=dict(color=color_map[location])
             ))
@@ -125,9 +119,12 @@ if uploaded_file:
             hovermode="x unified"
         )
 
-        # Y-Achsen-Formatierung für Prozentwerte
+        # Y-Achsen-Formatierung
+        # While the hover is default, we can still format the axis ticks
         if is_percent:
-            fig.update_yaxes(ticksuffix="%")
+            fig.update_yaxes(ticksuffix="%", hoverformat=".2f")
+        else:
+            fig.update_yaxes(hoverformat=",.2f")
 
         # X-Achsen-Reihenfolge festlegen
         fig.update_xaxes(categoryorder='array', categoryarray=months_order)
