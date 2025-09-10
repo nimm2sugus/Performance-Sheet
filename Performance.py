@@ -50,6 +50,25 @@ if uploaded_file:
     locations = data.columns
     selected_locations = st.multiselect("Standorte auswählen:", locations, default=[locations[0]])
 
+    # Monatsbereich einstellen
+    months_order = [
+        "Januar", "Februar", "März", "April", "Mai", "Juni",
+        "Juli", "August", "September", "Oktober", "November", "Dezember"
+    ]
+    available_months = [m for m in months_order if m in data.index]
+    start_month, end_month = st.select_slider(
+        "Monatsbereich wählen:",
+        options=available_months,
+        value=(available_months[0], available_months[-1])
+    )
+
+    # Daten auf ausgewählten Monatsbereich filtern
+    if available_months:
+        start_idx = available_months.index(start_month)
+        end_idx = available_months.index(end_month)
+        month_range = available_months[start_idx:end_idx+1]
+        data = data.loc[data.index.isin(month_range)]
+
     if selected_locations:
         # Daten ins Long-Format für Altair
         chart_data = data[selected_locations].reset_index().melt(id_vars=data.index.name or data.columns[0],
@@ -61,8 +80,7 @@ if uploaded_file:
             .mark_line(point=True)
             .encode(
                 x=alt.X(f"{data.index.name or data.columns[0]}:O", title="Monat",
-                        sort=["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
-                              "August", "September", "Oktober", "November", "Dezember", "Jahressumme"]),
+                        sort=months_order),
                 y=alt.Y("kWh:Q", title="kWh"),
                 color="Standort:N",
                 tooltip=[data.index.name or data.columns[0], "Standort", "kWh"]
