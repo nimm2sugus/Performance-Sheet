@@ -80,40 +80,52 @@ if uploaded_file:
             value=(available_months[0], available_months[-1])
         )
 
-        # Daten auf ausgewählten Monatsbereich filtern (dieser Schritt ist schnell und braucht keinen Cache)
+        # Daten auf ausgewählten Monatsbereich filtern
         start_idx = available_months.index(start_month)
         end_idx = available_months.index(end_month)
         month_range = available_months[start_idx:end_idx + 1]
         filtered_data = data.loc[data.index.isin(month_range)]
 
     if selected_locations and not filtered_data.empty:
-        # Erstellen einer leeren Figur mit Plotly Graph Objects
         fig = go.Figure()
 
-        # Standorte nach Durchschnittswert im Zeitraum sortieren für die Hover-Anzeige
-        mean_values = filtered_data[selected_locations].mean().sort_values(ascending=False)
-        sorted_locations = mean_values.index
+        # --- Erstellen des benutzerdefinierten Hover-Textes (pro Monat sortiert) ---
+        hover_texts = []
+        for month in filtered_data.index:
+            # Daten für den aktuellen Monat abrufen und absteigend sortieren
+            month_data = filtered_data.loc[month, selected_locations].sort_values(ascending=False)
 
-        # Hinzufügen einer Linie (Trace) für jeden ausgewählten Standort in sortierter Reihenfolge
-        for location in sorted_locations:
-            # Hover-Template je nach Datentyp anpassen
-            if is_percent:
-                # Formatierung für Prozente auf zwei Dezimalstellen
-                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y:.2f}%<extra></extra>'
-                custom_data = [[location]] * len(filtered_data.index)
-            else:
-                # Formatierung für Zahlen auf zwei Dezimalstellen mit Tausendertrennzeichen
-                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y:,.2f}<extra></extra>'
-                custom_data = [[location]] * len(filtered_data.index)
+            # HTML-formatierten String für den Tooltip erstellen
+            month_text_parts = [f"<b>{month}</b><extra></extra>"]  # <extra> verhindert den Trace-Namen
+            for location, value in month_data.items():
+                if is_percent:
+                    formatted_value = f"{value:.2f}%"
+                else:
+                    formatted_value = f"{value:,.2f}"
+                month_text_parts.append(f"{location}: {formatted_value}")
 
+            hover_texts.append("<br>".join(month_text_parts))
+
+        # --- Sichtbare Linien ohne eigenen Hover hinzufügen ---
+        for location in selected_locations:
             fig.add_trace(go.Scatter(
                 x=filtered_data.index,
                 y=filtered_data[location],
                 name=location,
-                mode='lines+markers',  # Linien mit Punkten
-                hovertemplate=hover_template,
-                customdata=custom_data
+                mode='lines+markers',
+                hoverinfo='none'  # Deaktiviert den Standard-Hover für diese Linien
             ))
+
+        # --- Unsichtbare Ebene für den benutzerdefinierten Hover hinzufügen ---
+        fig.add_trace(go.Scatter(
+            x=filtered_data.index,
+            y=filtered_data[selected_locations].max(axis=1),  # Platziert den Hover an der obersten Linie
+            mode='lines',
+            line=dict(color='rgba(0,0,0,0)'),  # Macht die Linie unsichtbar
+            hoverinfo='text',
+            hovertext=hover_texts,
+            showlegend=False
+        ))
 
         # Layout der Grafik anpassen
         fig.update_layout(
@@ -121,17 +133,23 @@ if uploaded_file:
             xaxis_title="Monat",
             yaxis_title="",  # Y-Achsen-Titel entfernt
             legend_title="Standort",
-            hovermode="x unified"  # Verbessert das Hover-Verhalten
+            hovermode="x",  # Aktiviert den Hover für die gesamte X-Achse
+            hoverlabel=dict(
+                bgcolor="white",
+                font_size=12,
+                align="left"  # Richtet den Text im Tooltip linksbündig aus
+            )
         )
 
-        # Y-Achsen-Formatierung für Prozentwerte (nur das %-Zeichen bei den Ticks)
+        # Y-Achsen-Formatierung für Prozentwerte
         if is_percent:
             fig.update_yaxes(ticksuffix="%")
 
-        # X-Achsen-Reihenfolge festlegen, um die Monate korrekt zu sortieren
+        # X-Achsen-Reihenfolge festlegen
         fig.update_xaxes(categoryorder='array', categoryarray=months_order)
 
         st.plotly_chart(fig, use_container_width=True)
+
     elif not selected_locations:
         st.info("Bitte mindestens einen Standort auswählen.")
     else:
