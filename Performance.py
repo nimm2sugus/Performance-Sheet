@@ -98,11 +98,12 @@ if uploaded_file:
         for location in sorted_locations:
             # Hover-Template je nach Datentyp anpassen
             if is_percent:
-                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y:.2f}%<extra></extra>'
+                # Formatierung für Prozente ohne Rundung
+                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y}%<extra></extra>'
                 custom_data = [[location]] * len(filtered_data.index)
             else:
-                # Format kWh mit Tausendertrennzeichen
-                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y:,.0f} kWh<extra></extra>'
+                # Formatierung für kWh mit Tausendertrennzeichen ohne Rundung
+                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y:,} kWh<extra></extra>'
                 custom_data = [[location]] * len(filtered_data.index)
 
             fig.add_trace(go.Scatter(
