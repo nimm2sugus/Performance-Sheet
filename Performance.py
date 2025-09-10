@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
+import plotly.graph_objects as go
 
 # --- Streamlit App ---
 st.set_page_config(page_title="Performance PARK 25", layout="wide")
@@ -19,11 +19,12 @@ if uploaded_file:
     # Abschnittsnamen auslesen (erste Zelle der Startzeile)
     section_labels = [df.iloc[i, 0] for i in section_starts]
 
+
     # Funktion: Datenblöcke extrahieren
     def extract_section(df, start_row, drop_sum=False):
         header = df.iloc[start_row]
         end_row = start_row + 13  # 12 Monate + Jahressumme
-        section = df.iloc[start_row+1:end_row+1, :]
+        section = df.iloc[start_row + 1:end_row + 1, :]
         section = section.rename(columns=header)
         section = section.dropna(axis=1, how="all")
         section = section.set_index(section.columns[0])
@@ -36,6 +37,7 @@ if uploaded_file:
         ]
         section = section.reindex([m for m in months_order if m in section.index])
         return section
+
 
     # Auswahl des Abschnitts
     section_choice = st.selectbox("Abschnitt auswählen:", section_labels)
@@ -66,33 +68,35 @@ if uploaded_file:
     if available_months:
         start_idx = available_months.index(start_month)
         end_idx = available_months.index(end_month)
-        month_range = available_months[start_idx:end_idx+1]
+        month_range = available_months[start_idx:end_idx + 1]
         data = data.loc[data.index.isin(month_range)]
 
     if selected_locations:
-        # Daten ins Long-Format für Altair
-        chart_data = data[selected_locations].reset_index().melt(id_vars=data.index.name or data.columns[0],
-                                                               var_name="Standort",
-                                                               value_name="kWh")
+        # Erstellen einer leeren Figur mit Plotly Graph Objects
+        fig = go.Figure()
 
-        chart = (
-            alt.Chart(chart_data)
-            .mark_line(point=True)
-            .encode(
-                x=alt.X(f"{data.index.name or data.columns[0]}:O", title="Monat",
-                        sort=months_order),
-                y=alt.Y("kWh:Q", title="kWh"),
-                color="Standort:N",
-                tooltip=[data.index.name or data.columns[0], "Standort", "kWh"]
-            )
-            .properties(
-                title=f"Monatliche Werte: {section_choice}",
-                width=800,
-                height=400
-            )
+        # Hinzufügen einer Linie (Trace) für jeden ausgewählten Standort
+        for location in selected_locations:
+            fig.add_trace(go.Scatter(
+                x=data.index,
+                y=data[location],
+                name=location,
+                mode='lines+markers'  # Linien mit Punkten
+            ))
+
+        # Layout der Grafik anpassen
+        fig.update_layout(
+            title=f"Monatliche Werte: {section_choice}",
+            xaxis_title="Monat",
+            yaxis_title="kWh",
+            legend_title="Standort",
+            hovermode="x unified"  # Verbessert das Hover-Verhalten
         )
 
-        st.altair_chart(chart, use_container_width=True)
+        # X-Achsen-Reihenfolge festlegen, um die Monate korrekt zu sortieren
+        fig.update_xaxes(categoryorder='array', categoryarray=months_order)
+
+        st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("Bitte mindestens einen Standort auswählen.")
 else:
