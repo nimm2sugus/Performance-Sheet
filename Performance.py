@@ -100,11 +100,11 @@ if uploaded_file:
 
         # Hinzufügen einer Linie (Trace) für jeden ausgewählten Standort in sortierter Reihenfolge
         for location in sorted_locations:
-            # Hover-Template je nach Datentyp anpassen
+            # Hover-Template je nach Datentyp anpassen, um den Standortnamen einzuschließen
             if is_percent:
-                hover_template = '%{y:.2f}%<extra></extra>'
+                hover_template = '<b>%{name}</b>: %{y:.2f}%<extra></extra>'
             else:
-                hover_template = '%{y:,.2f}<extra></extra>'
+                hover_template = '<b>%{name}</b>: %{y:,.2f}<extra></extra>'
 
             fig.add_trace(go.Scatter(
                 x=filtered_data.index,
@@ -112,8 +112,8 @@ if uploaded_file:
                 name=location,
                 mode='lines+markers',
                 hovertemplate=hover_template,
-                line=dict(color=color_map[location]),  # Farbe für die Linie festlegen
-                marker=dict(color=color_map[location])  # Farbe für die Marker festlegen
+                line=dict(color=color_map[location]),
+                marker=dict(color=color_map[location])
             ))
 
         # Layout der Grafik anpassen
@@ -129,7 +129,7 @@ if uploaded_file:
         if is_percent:
             fig.update_yaxes(ticksuffix="%")
 
-        # X-Achsen-Reihenfolge festlegen
+        # X-Achsen-Rehenfolge festlegen
         fig.update_xaxes(categoryorder='array', categoryarray=months_order)
 
         st.plotly_chart(fig, use_container_width=True)
