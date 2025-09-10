@@ -98,12 +98,12 @@ if uploaded_file:
         for location in sorted_locations:
             # Hover-Template je nach Datentyp anpassen
             if is_percent:
-                # Formatierung für Prozente ohne Rundung
-                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y}%<extra></extra>'
+                # Formatierung für Prozente auf zwei Dezimalstellen
+                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y:.2f}%<extra></extra>'
                 custom_data = [[location]] * len(filtered_data.index)
             else:
-                # Formatierung für kWh mit Tausendertrennzeichen ohne Rundung
-                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y:,} kWh<extra></extra>'
+                # Formatierung für Zahlen auf zwei Dezimalstellen mit Tausendertrennzeichen
+                hover_template = '<b>%{customdata[0]}</b><br>%{x}<br>%{y:,.2f}<extra></extra>'
                 custom_data = [[location]] * len(filtered_data.index)
 
             fig.add_trace(go.Scatter(
@@ -116,17 +116,15 @@ if uploaded_file:
             ))
 
         # Layout der Grafik anpassen
-        yaxis_title = "Anteil in %" if is_percent else "kWh"
-
         fig.update_layout(
             title=f"Monatliche Werte: {section_choice}",
             xaxis_title="Monat",
-            yaxis_title=yaxis_title,
+            yaxis_title="",  # Y-Achsen-Titel entfernt
             legend_title="Standort",
             hovermode="x unified"  # Verbessert das Hover-Verhalten
         )
 
-        # Y-Achsen-Formatierung für Prozentwerte
+        # Y-Achsen-Formatierung für Prozentwerte (nur das %-Zeichen bei den Ticks)
         if is_percent:
             fig.update_yaxes(ticksuffix="%")
 
