@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px  # Imported to access its extensive color palettes
 
 # --- Streamlit App ---
 st.set_page_config(page_title="Performance PARK 25", layout="wide")
@@ -90,9 +91,12 @@ if uploaded_file:
         fig = go.Figure()
 
         # Standorte nach Durchschnittswert im gefilterten Zeitraum sortieren
-        # Dies bestimmt die Reihenfolge in der Legende und im Hover-Tooltip
         mean_values = filtered_data[selected_locations].mean().sort_values(ascending=False)
         sorted_locations = mean_values.index
+
+        # Erstellen einer Farbzuordnung für jeden Standort
+        color_palette = px.colors.qualitative.Alphabet
+        color_map = {location: color_palette[i % len(color_palette)] for i, location in enumerate(sorted_locations)}
 
         # Hinzufügen einer Linie (Trace) für jeden ausgewählten Standort in sortierter Reihenfolge
         for location in sorted_locations:
@@ -107,7 +111,9 @@ if uploaded_file:
                 y=filtered_data[location],
                 name=location,
                 mode='lines+markers',
-                hovertemplate=hover_template
+                hovertemplate=hover_template,
+                line=dict(color=color_map[location]),  # Farbe für die Linie festlegen
+                marker=dict(color=color_map[location])  # Farbe für die Marker festlegen
             ))
 
         # Layout der Grafik anpassen
@@ -116,7 +122,7 @@ if uploaded_file:
             xaxis_title="Monat",
             yaxis_title="",  # Y-Achsen-Titel entfernt
             legend_title="Standort",
-            hovermode="x unified"  # Der beste Hover-Modus für diesen Anwendungsfall
+            hovermode="x unified"
         )
 
         # Y-Achsen-Formatierung für Prozentwerte
