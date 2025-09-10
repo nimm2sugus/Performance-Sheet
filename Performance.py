@@ -10,30 +10,37 @@ st.title("📊 Performance Analyse")
 uploaded_file = st.file_uploader("Bitte Excel-Datei hochladen", type=["xlsx"])
 
 if uploaded_file:
-    # Excel einlesen
+    # Excel einlesen (ohne Header, damit wir Positionen nutzen können)
     df = pd.read_excel(uploaded_file, sheet_name="Performance PARK 25", header=None)
 
-    # Abschnitte erkennen (Zeilen mit Text wie "in kWh")
-    section_labels = df[df.iloc[:, 0].astype(str).str.contains("in kWh", na=False)].iloc[:, 0].tolist()
+    # Vorgegebene Startzeilen der Datenblöcke (0-basiert)
+    section_starts = [1, 18, 35, 52, 69, 86, 103, 120, 137, 154]
+
+    # Abschnittsnamen auslesen (erste Zelle der Startzeile)
+    section_labels = [df.iloc[i, 0] for i in section_starts]
 
     # Funktion: Datenblöcke extrahieren
-    def extract_section(df, start_label):
-        start_row = df[df.iloc[:, 0] == start_label].index[0]
-        # Abschnitt läuft bis zur nächsten Abschnittsbeschriftung oder Ende
-        next_labels = df[df.index > start_row][df.iloc[:, 0].astype(str).str.contains("in kWh", na=False)].index
-        end_row = next_labels[0] if not next_labels.empty else len(df)
-        section = df.iloc[start_row+1:end_row, :]
-        section = section.rename(columns=df.iloc[start_row])
+    def extract_section(df, start_row, drop_sum=False):
+        header = df.iloc[start_row]
+        end_row = start_row + 13  # 12 Monate + Jahressumme
+        section = df.iloc[start_row+1:end_row+1, :]
+        section = section.rename(columns=header)
         section = section.dropna(axis=1, how="all")
         section = section.set_index(section.columns[0])
-        # Jahressumme ggf. behalten
+        if drop_sum:
+            section = section.drop(index=["Jahressumme"], errors="ignore")
         return section
 
-    # Abschnittsauswahl
+    # Auswahl des Abschnitts
     section_choice = st.selectbox("Abschnitt auswählen:", section_labels)
-    data = extract_section(df, section_choice)
+    start_row = section_starts[section_labels.index(section_choice)]
 
-    # Standortauswahl (inkl. Alle Anlagen)
+    # Option: Jahressumme ausblenden
+    drop_sum = st.checkbox("Jahressumme ausblenden", value=True)
+
+    data = extract_section(df, start_row, drop_sum)
+
+    # Standortauswahl
     locations = data.columns
     selected_locations = st.multiselect("Standorte auswählen:", locations, default=[locations[0]])
 
