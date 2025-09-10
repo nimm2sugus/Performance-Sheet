@@ -29,6 +29,12 @@ if uploaded_file:
         section = section.set_index(section.columns[0])
         if drop_sum:
             section = section.drop(index=["Jahressumme"], errors="ignore")
+        # Reihenfolge der Monate fixieren (Januar zuerst)
+        months_order = [
+            "Januar", "Februar", "März", "April", "Mai", "Juni",
+            "Juli", "August", "September", "Oktober", "November", "Dezember", "Jahressumme"
+        ]
+        section = section.reindex([m for m in months_order if m in section.index])
         return section
 
     # Auswahl des Abschnitts
@@ -54,7 +60,9 @@ if uploaded_file:
             alt.Chart(chart_data)
             .mark_line(point=True)
             .encode(
-                x=alt.X(f"{data.index.name or data.columns[0]}:O", title="Monat"),
+                x=alt.X(f"{data.index.name or data.columns[0]}:O", title="Monat",
+                        sort=["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli",
+                              "August", "September", "Oktober", "November", "Dezember", "Jahressumme"]),
                 y=alt.Y("kWh:Q", title="kWh"),
                 color="Standort:N",
                 tooltip=[data.index.name or data.columns[0], "Standort", "kWh"]
