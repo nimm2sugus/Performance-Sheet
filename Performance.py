@@ -94,8 +94,8 @@ if uploaded_file:
         mean_values = filtered_data[selected_locations].mean().sort_values(ascending=False)
         sorted_locations = mean_values.index
 
-        # Erstellen einer Farbzuordnung für jeden Standort
-        color_palette = px.colors.qualitative.Alphabet
+        # Erstellen einer Farbzuordnung für jeden Standort mit der neuen Palette
+        color_palette = px.colors.qualitative.Vivid
         color_map = {location: color_palette[i % len(color_palette)] for i, location in enumerate(sorted_locations)}
 
         # Hinzufügen einer Linie (Trace) für jeden ausgewählten Standort in sortierter Reihenfolge
@@ -105,7 +105,6 @@ if uploaded_file:
                 y=filtered_data[location],
                 name=location,
                 mode='lines+markers',
-                # hovertemplate argument is removed to restore default behavior
                 line=dict(color=color_map[location]),
                 marker=dict(color=color_map[location])
             ))
@@ -120,7 +119,6 @@ if uploaded_file:
         )
 
         # Y-Achsen-Formatierung
-        # While the hover is default, we can still format the axis ticks
         if is_percent:
             fig.update_yaxes(ticksuffix="%", hoverformat=".2f")
         else:
