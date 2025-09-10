@@ -89,43 +89,26 @@ if uploaded_file:
     if selected_locations and not filtered_data.empty:
         fig = go.Figure()
 
-        # --- Erstellen des benutzerdefinierten Hover-Textes (pro Monat sortiert) ---
-        hover_texts = []
-        for month in filtered_data.index:
-            # Daten für den aktuellen Monat abrufen und absteigend sortieren
-            month_data = filtered_data.loc[month, selected_locations].sort_values(ascending=False)
+        # Standorte nach Durchschnittswert im gefilterten Zeitraum sortieren
+        # Dies bestimmt die Reihenfolge in der Legende und im Hover-Tooltip
+        mean_values = filtered_data[selected_locations].mean().sort_values(ascending=False)
+        sorted_locations = mean_values.index
 
-            # HTML-formatierten String für den Tooltip erstellen
-            month_text_parts = [f"<b>{month}</b><extra></extra>"]  # <extra> verhindert den Trace-Namen
-            for location, value in month_data.items():
-                if is_percent:
-                    formatted_value = f"{value:.2f}%"
-                else:
-                    formatted_value = f"{value:,.2f}"
-                month_text_parts.append(f"{location}: {formatted_value}")
+        # Hinzufügen einer Linie (Trace) für jeden ausgewählten Standort in sortierter Reihenfolge
+        for location in sorted_locations:
+            # Hover-Template je nach Datentyp anpassen
+            if is_percent:
+                hover_template = '%{y:.2f}%<extra></extra>'
+            else:
+                hover_template = '%{y:,.2f}<extra></extra>'
 
-            hover_texts.append("<br>".join(month_text_parts))
-
-        # --- Sichtbare Linien ohne eigenen Hover hinzufügen ---
-        for location in selected_locations:
             fig.add_trace(go.Scatter(
                 x=filtered_data.index,
                 y=filtered_data[location],
                 name=location,
                 mode='lines+markers',
-                hoverinfo='none'  # Deaktiviert den Standard-Hover für diese Linien
+                hovertemplate=hover_template
             ))
-
-        # --- Unsichtbare Ebene für den benutzerdefinierten Hover hinzufügen ---
-        fig.add_trace(go.Scatter(
-            x=filtered_data.index,
-            y=filtered_data[selected_locations].max(axis=1),  # Platziert den Hover an der obersten Linie
-            mode='lines',
-            line=dict(color='rgba(0,0,0,0)'),  # Macht die Linie unsichtbar
-            hoverinfo='text',
-            hovertext=hover_texts,
-            showlegend=False
-        ))
 
         # Layout der Grafik anpassen
         fig.update_layout(
@@ -133,12 +116,7 @@ if uploaded_file:
             xaxis_title="Monat",
             yaxis_title="",  # Y-Achsen-Titel entfernt
             legend_title="Standort",
-            hovermode="x",  # Aktiviert den Hover für die gesamte X-Achse
-            hoverlabel=dict(
-                bgcolor="white",
-                font_size=12,
-                align="left"  # Richtet den Text im Tooltip linksbündig aus
-            )
+            hovermode="x unified"  # Der beste Hover-Modus für diesen Anwendungsfall
         )
 
         # Y-Achsen-Formatierung für Prozentwerte
